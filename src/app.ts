@@ -40,7 +40,7 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   const { statusCode = 500, message } = err;
 
   res.status(statusCode).send({
-    message: statusCode === 500 ? 'Ошибка по умолчанию.' : message
+    message: statusCode === 500 ? 'На сервере произошла ошибка' : message
   });
 });
 
