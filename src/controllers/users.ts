@@ -1,6 +1,8 @@
 import { CustomRequest } from 'app';
 import bcrypt from 'bcrypt';
+import { IncorrectAuthError } from 'errors/incorrect_auth_err';
 import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 
 import { IncorrectDataError } from '../errors/incorrect_data_err';
 import { NotFoundError } from '../errors/not-found-err';
@@ -86,5 +88,35 @@ export const updateUserAvatar = (
       }
       res.send({ data: user });
     })
+    .catch(next);
+};
+
+export const login = (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  const error_text = 'Неправильные почта или пароль';
+
+  return User.findOne({ email })
+    .then((user) => {
+      if (!user) {
+        throw new IncorrectAuthError(error_text);
+      }
+
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          throw new IncorrectAuthError(error_text);
+        }
+        const token = jwt.sign({ _id: user._id }, 'super-gay-secret', {
+          expiresIn: '7d'
+        });
+        res
+          .cookie('jwt', token, {
+            maxAge: 3600000,
+            httpOnly: true
+          })
+          .end();
+        res.send({});
+      });
+    })
+
     .catch(next);
 };
