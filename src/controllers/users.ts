@@ -1,8 +1,10 @@
+import { CustomRequest } from 'app';
+import bcrypt from 'bcrypt';
 import { NextFunction, Request, Response } from 'express';
-import User from '../models/user';
+
 import { IncorrectDataError } from '../errors/incorrect_data_err';
 import { NotFoundError } from '../errors/not-found-err';
-import { CustomRequest } from 'app';
+import User from '../models/user';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   return User.find({})
@@ -25,9 +27,11 @@ export const getUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
-  const { name, about, avatar } = req.body;
+  const { name, about, avatar, email, password } = req.body;
 
-  return User.create({ name, about, avatar })
+  return bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({ name, about, avatar, email, password: hash }))
     .then((user) => {
       if (!user) {
         throw new IncorrectDataError(

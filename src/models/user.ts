@@ -13,15 +13,18 @@ const UserSchema = new Schema<IUser>({
   name: {
     type: String,
     minlength: 2,
-    maxlength: 30
+    maxlength: 30,
+    default: 'Billy herrington'
   },
   about: {
     type: String,
     minlength: 2,
-    maxlength: 200
+    maxlength: 200,
+    default: 'Актёр'
   },
   avatar: {
-    type: String
+    type: String,
+    default: 'https://i.redd.it/221v3dpoggcd1.jpeg'
   },
   email: {
     type: String,
