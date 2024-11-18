@@ -1,9 +1,10 @@
 import { CustomRequest } from 'app';
 import bcrypt from 'bcrypt';
-import { IncorrectAuthError } from 'errors/incorrect_auth_err';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { SessionRequest } from 'middlewares/auth';
 
+import { IncorrectAuthError } from '../errors/incorrect_auth_err';
 import { IncorrectDataError } from '../errors/incorrect_data_err';
 import { NotFoundError } from '../errors/not-found-err';
 import User from '../models/user';
@@ -18,6 +19,26 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
 
 export const getUser = (req: Request, res: Response, next: NextFunction) => {
   return User.findById(req.params.id)
+    .select('name about avatar _id')
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь по указанному _id не найден.');
+      }
+      res.send({ data: user });
+    })
+    .catch(next);
+};
+
+export const getCurrentUser = (
+  req: SessionRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user || typeof req.user !== 'object' || !('_id' in req.user)) {
+    throw new IncorrectAuthError('Необходима авторизация');
+  }
+
+  return User.findById(req.user._id)
     .select('name about avatar _id')
     .then((user) => {
       if (!user) {
@@ -96,6 +117,7 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
   const error_text = 'Неправильные почта или пароль';
 
   return User.findOne({ email })
+    .select('+password')
     .then((user) => {
       if (!user) {
         throw new IncorrectAuthError(error_text);

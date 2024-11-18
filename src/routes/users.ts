@@ -1,10 +1,10 @@
+import { Joi, celebrate } from 'celebrate';
 import { Router } from 'express';
 
 import {
-  createUser,
+  getCurrentUser,
   getUser,
   getUsers,
-  login,
   updateUser,
   updateUserAvatar
 } from '../controllers/users';
@@ -12,10 +12,34 @@ import {
 const router = Router();
 
 router.get('/', getUsers);
-router.get('/:id', getUser);
-router.post('/signup', createUser);
-router.post('/signin', login);
-router.patch('/me', updateUser);
-router.patch('/me/avatar', updateUserAvatar);
+router.get(
+  '/:id',
+  celebrate({
+    params: Joi.object().keys({
+      id: Joi.string().alphanum().length(24)
+    })
+  }),
+  getUser
+);
+router.get('/me', getCurrentUser);
+router.patch(
+  '/me',
+  celebrate({
+    body: Joi.object().keys({
+      name: Joi.string().min(2).max(30),
+      about: Joi.string().min(2).max(200)
+    })
+  }),
+  updateUser
+);
+router.patch(
+  '/me/avatar',
+  celebrate({
+    body: Joi.object().keys({
+      avatar: Joi.string().uri()
+    })
+  }),
+  updateUserAvatar
+);
 
 export default router;

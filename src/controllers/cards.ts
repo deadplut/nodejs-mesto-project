@@ -1,8 +1,10 @@
+import { CustomRequest } from 'app';
 import { NextFunction, Request, Response } from 'express';
-import Card from '../models/card';
+
+import { ForbiddenError } from '../errors/forbidden_error';
 import { IncorrectDataError } from '../errors/incorrect_data_err';
 import { NotFoundError } from '../errors/not-found-err';
-import { CustomRequest } from 'app';
+import Card from '../models/card';
 
 export const getCards = (req: Request, res: Response, next: NextFunction) =>
   Card.find({})
@@ -28,8 +30,24 @@ export const createCard = (
     .catch(next);
 };
 
-export const deleteCard = (req: Request, res: Response, next: NextFunction) =>
-  Card.deleteOne({ _id: req.params.id })
+export const deleteCard = (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  Card.findById({ _id: req.params.id })
+    .then((card) => {
+      if (!card) {
+        throw new IncorrectDataError('Передан некорректный _id карточки.');
+      }
+
+      if (card.owner.toString() !== req.user?._id.toString()) {
+        throw new ForbiddenError(
+          'Вы не можете удалить эту карточку, так как не являетесь её владельцем.'
+        );
+      }
+      return Card.deleteOne({ _id: req.params.id });
+    })
     .then((result) => {
       if (result.deletedCount < 1) {
         throw new IncorrectDataError('Передан некорректный _id карточки.');
@@ -38,6 +56,7 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) =>
       }
     })
     .catch(next);
+};
 
 export const likeCard = (
   req: CustomRequest,

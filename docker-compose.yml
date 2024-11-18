@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:5.0
+    container_name: ${COMPOSE_PROJECT_NAME}_mongodb
+    ports:
+      - '${MONGO_PORT}:27017'
+    networks:
+      - mesto_network
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+
+networks:
+  mesto_network:

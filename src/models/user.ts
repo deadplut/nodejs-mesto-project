@@ -24,7 +24,11 @@ const UserSchema = new Schema<IUser>({
   },
   avatar: {
     type: String,
-    default: 'https://i.redd.it/221v3dpoggcd1.jpeg'
+    default: 'https://i.redd.it/221v3dpoggcd1.jpeg',
+    validate: {
+      validator: (v: string) => validator.isURL(v, { require_protocol: true }),
+      message: 'Некорректный формат URL'
+    }
   },
   email: {
     type: String,
@@ -37,7 +41,8 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: true
+    required: true,
+    select: false
   }
 });
 

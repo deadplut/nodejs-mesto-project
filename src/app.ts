@@ -1,19 +1,34 @@
-import path from 'path';
 import dotenv from 'dotenv';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
-import usersRouter from './routes/users';
+import path from 'path';
+
+import auth from './middlewares/auth';
+import { errorLogger, requestLogger } from './middlewares/logger';
+import authRouter from './routes/auth';
 import cardsRouter from './routes/cards';
-import { Request, Response, NextFunction } from 'express';
+import usersRouter from './routes/users';
+
+const { errors } = require('celebrate');
 
 dotenv.config();
-const { PORT = 3000, BASE_PATH = '/sad' } = process.env;
+const {
+  PORT = 3000,
+  BASE_PATH = '/',
+  MONGO_URL = 'mongodb://localhost:27017/mestodb'
+} = process.env;
+
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect('mongodb://localhost:27017/mestodb');
+mongoose
+  .connect(MONGO_URL)
+  .then(() => console.log('Успешно подключились к MongoDB'))
+  .catch((err) => console.error('Ошибка подключения к MongoDB:', err));
+
+mongoose.set('strictQuery', true);
 
 export interface CustomRequest extends Request {
   user?: {
@@ -21,21 +36,18 @@ export interface CustomRequest extends Request {
   };
 }
 
-app.use((req: CustomRequest, res: Response, next: NextFunction) => {
-  req.user = {
-    _id: '6736175152c8f90bb3a29391'
-  };
+app.use(requestLogger);
 
-  next();
-});
-
+app.use('/', authRouter);
+app.use(auth);
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
+app.use(errorLogger);
 
 export interface CustomError extends Error {
   statusCode?: number;
 }
-
+app.use(errors());
 app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   const { statusCode = 500, message } = err;
 
@@ -47,6 +59,8 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.listen(PORT, () => {
   console.log(`Сервер запущен на http://localhost:${PORT}`);
+  console.log(`Сервер запущен на http://localhost:${MONGO_URL}`);
+
   console.log('Gay на сервере');
   console.log(BASE_PATH);
 });
